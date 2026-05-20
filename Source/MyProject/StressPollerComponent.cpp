@@ -1,5 +1,7 @@
 #include "StressPollerComponent.h"
 #include "TimerManager.h"
+#include "HttpModule.h"
+#include "Interfaces/IHttpResponse.h"
 #include "Json.h"
 #include "JsonUtilities.h"
 
@@ -16,6 +18,8 @@ void UStressPollerComponent::BeginPlay()
 
 void UStressPollerComponent::StartPolling(const FString& URL, float IntervalSeconds)
 {
+    UE_LOG(LogTemp, Warning, TEXT("StartPolling CALLED"));
+
     EndpointURL = URL;
     PollInterval = IntervalSeconds;
 
@@ -30,16 +34,21 @@ void UStressPollerComponent::StartPolling(const FString& URL, float IntervalSeco
 
 void UStressPollerComponent::StopPolling()
 {
-    GetWorld()->GetTimerManager().ClearTimer(PollTimer);
+    if (GetWorld())
+    {
+        GetWorld()->GetTimerManager().ClearTimer(PollTimer);
+    }
 }
 
 void UStressPollerComponent::PollServer()
 {
+    UE_LOG(LogTemp, Warning, TEXT("PollServer CALLED"));
+
     TSharedRef<IHttpRequest, ESPMode::ThreadSafe> Request =
         FHttpModule::Get().CreateRequest();
 
     Request->SetURL(EndpointURL);
-    Request->SetVerb("GET");
+    Request->SetVerb(TEXT("GET"));
 
     Request->OnProcessRequestComplete().BindUObject(
         this,
@@ -55,28 +64,31 @@ void UStressPollerComponent::OnResponseReceived(
     bool bWasSuccessful
 )
 {
+    UE_LOG(LogTemp, Warning, TEXT("HTTP CALLBACK FIRED"));
+
     float StressValue = 0.0f;
 
     if (bWasSuccessful && Response.IsValid())
     {
         FString Content = Response->GetContentAsString();
+        UE_LOG(LogTemp, Warning, TEXT("RAW RESPONSE: %s"), *Content);
 
         TSharedPtr<FJsonObject> JsonObject;
         TSharedRef<TJsonReader<>> Reader = TJsonReaderFactory<>::Create(Content);
 
         if (FJsonSerializer::Deserialize(Reader, JsonObject) && JsonObject.IsValid())
         {
-            StressValue = JsonObject->GetNumberField("stress");
+            StressValue = JsonObject->GetNumberField(TEXT("stress"));
+            UE_LOG(LogTemp, Warning, TEXT("PARSED STRESS VALUE: %f"), StressValue);
         }
-        else
-        {
-            bWasSuccessful = false;
-        }
-    }
-    else
-    {
-        bWasSuccessful = false;
     }
 
-    OnStressReceived.Broadcast(StressValue, bWasSuccessful);
+    FStressData Data;
+    Data.Stress = StressValue;
+    Data.bSuccess = bWasSuccessful;
+    UE_LOG(LogTemp, Warning, TEXT("BROADCASTING STRUCT: %f"), Data.Stress);
+    UE_LOG(LogTemp, Warning, TEXT("[INSTANCE] this=%p IsTemplate=%d Listeners=%d"),
+        this, (int32)IsTemplate(), OnStressReceived.GetAllObjects().Num());
+    OnStressReceived.Broadcast(Data);
+
 }

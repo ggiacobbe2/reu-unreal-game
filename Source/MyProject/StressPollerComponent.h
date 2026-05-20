@@ -5,13 +5,24 @@
 #include "Http.h"
 #include "StressPollerComponent.generated.h"
 
-DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(
+USTRUCT(BlueprintType)
+struct FStressData
+{
+    GENERATED_BODY()
+
+    UPROPERTY(BlueprintReadOnly)
+    float Stress = 0.0f;
+
+    UPROPERTY(BlueprintReadOnly)
+    bool bSuccess = false;
+};
+
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(
     FOnStressReceived,
-    float, StressValue,
-    bool, bSuccess
+    FStressData, Data
 );
 
-UCLASS(ClassGroup=(Custom), meta=(BlueprintSpawnableComponent))
+UCLASS(ClassGroup = (Custom), meta = (BlueprintSpawnableComponent))
 class MYPROJECT_API UStressPollerComponent : public UActorComponent
 {
     GENERATED_BODY()
@@ -19,13 +30,13 @@ class MYPROJECT_API UStressPollerComponent : public UActorComponent
 public:
     UStressPollerComponent();
 
-    UFUNCTION(BlueprintCallable, Category="Stress")
+    UFUNCTION(BlueprintCallable, Category = "Stress")
     void StartPolling(const FString& URL, float IntervalSeconds);
 
-    UFUNCTION(BlueprintCallable, Category="Stress")
+    UFUNCTION(BlueprintCallable, Category = "Stress")
     void StopPolling();
 
-    UPROPERTY(BlueprintAssignable, Category="Stress")
+    UPROPERTY(BlueprintAssignable, Category = "Stress")
     FOnStressReceived OnStressReceived;
 
 protected:
@@ -33,8 +44,13 @@ protected:
 
 private:
     void PollServer();
-    void OnResponseReceived(FHttpRequestPtr Request, FHttpResponsePtr Response, bool bWasSuccessful);
+    void OnResponseReceived(
+        FHttpRequestPtr Request,
+        FHttpResponsePtr Response,
+        bool bWasSuccessful
+    );
 
+private:
     FTimerHandle PollTimer;
 
     FString EndpointURL;
