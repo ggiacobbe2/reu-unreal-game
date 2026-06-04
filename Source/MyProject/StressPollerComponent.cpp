@@ -89,6 +89,6 @@ void UStressPollerComponent::OnResponseReceived(
     UE_LOG(LogTemp, Warning, TEXT("BROADCASTING STRUCT: %f"), Data.Stress);
     UE_LOG(LogTemp, Warning, TEXT("[INSTANCE] this=%p IsTemplate=%d Listeners=%d"),
         this, (int32)IsTemplate(), OnStressReceived.GetAllObjects().Num());
-    OnStressReceived.Broadcast(Data);
+    OnStressReceived.Broadcast(Data.Stress, Data.bSuccess);
 
 }

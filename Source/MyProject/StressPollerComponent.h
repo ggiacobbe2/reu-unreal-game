@@ -17,9 +17,10 @@ struct FStressData
     bool bSuccess = false;
 };
 
-DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(
     FOnStressReceived,
-    FStressData, Data
+    float, StressValue,
+    bool, bSuccess
 );
 
 UCLASS(ClassGroup = (Custom), meta = (BlueprintSpawnableComponent))
